@@ -1,6 +1,6 @@
 import { BottomNavigation } from "@/components/BottomNavigation";
 import { EmptyState } from "@/components/EmptyState";
-import { LoadingSpinner } from "@/components/LoadingSpinner";
+import { AppLoadingIndicator } from "@/components/AppLoadingIndicator";
 import { RecipeCard } from "@/components/RecipeCard";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useRecipes } from "@/hooks/useRecipes";
@@ -89,7 +89,7 @@ export default function FavoritesScreen() {
       </View>
 
       {loading ? (
-        <LoadingSpinner text={i18n.t("loading")} />
+        <AppLoadingIndicator text={i18n.t("loading")} />
       ) : error ? (
         <EmptyState
           icon="alert-circle"

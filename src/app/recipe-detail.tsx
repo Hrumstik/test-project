@@ -1,4 +1,4 @@
-import { LoadingSpinner } from "@/components/LoadingSpinner";
+import { AppLoadingIndicator } from "@/components/AppLoadingIndicator";
 import { ImageWithFallback } from "@/components/ImageWithFallback";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useRecipes } from "@/hooks/useRecipes";
@@ -41,7 +41,7 @@ export default function RecipeDetailScreen() {
     return (
       <>
         <StatusBar style={isDark ? "light" : "dark"} />
-        <LoadingSpinner text={i18n.t("loading_recipe")} />
+        <AppLoadingIndicator text={i18n.t("loading_recipe")} />
       </>
     );
   }

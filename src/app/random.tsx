@@ -1,5 +1,5 @@
 import { BottomNavigation } from "@/components/BottomNavigation";
-import { LoadingSpinner } from "@/components/LoadingSpinner";
+import { AppLoadingIndicator } from "@/components/AppLoadingIndicator";
 import { RecipeCard } from "@/components/RecipeCard";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useRecipes } from "@/hooks/useRecipes";
@@ -121,7 +121,7 @@ export default function RandomScreen() {
 
       {}
       {loading ? (
-        <LoadingSpinner text={i18n.t("loading_recipe")} />
+        <AppLoadingIndicator text={i18n.t("loading_recipe")} />
       ) : randomRecipe ? (
         <ScrollView
           className="flex-1 px-4"
