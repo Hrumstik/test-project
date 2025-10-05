@@ -1,0 +1,10 @@
+node_modules/
+.expo/
+dist/
+build/
+*.log
+.env*
+coverage/
+.nyc_output/
+*.tgz
+*.tar.gz

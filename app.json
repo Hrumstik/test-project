@@ -1,0 +1,55 @@
+{
+  "expo": {
+    "name": "Tasty Clucker Creations",
+    "slug": "tasty-clucker-creations",
+    "scheme": "tasty-clucker-creations",
+    "version": "1.0.0",
+    "orientation": "default",
+    "icon": "./assets/logo.png",
+    "userInterfaceStyle": "automatic",
+    "newArchEnabled": true,
+    "splash": {
+      "image": "./assets/splash.png",
+      "resizeMode": "cover",
+      "backgroundColor": "#ffffff"
+    },
+    "ios": {
+      "bundleIdentifier": "com.hrumstik.flavorly",
+      "googleServicesFile": "./GoogleService-Info.plist",
+      "entitlements": {
+        "aps-environment": "production"
+      },
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false,
+        "NSUserTrackingUsageDescription": "This app uses data for advertising and analytics to provide you with personalized content and improve your experience."
+      }
+    },
+    "plugins": [
+      "expo-router",
+      "expo-font",
+      "expo-dev-client",
+      "@react-native-firebase/app",
+      "@react-native-firebase/messaging",
+      [
+        "expo-build-properties",
+        {
+          "ios": {
+            "newArchEnabled": false,
+            "flipper": false,
+            "useFrameworks": "static"
+          }
+        }
+      ]
+    ],
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "4715afa8-d0b5-4b18-81d7-577cc12f7d19"
+      }
+    },
+    "android": {
+      "package": "com.hrumstik.flavorly",
+      "googleServicesFile": "./google-services.json"
+    }
+  }
+}

@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "377829470583",
+    "project_id": "flavorly-88ad4",
+    "storage_bucket": "flavorly-88ad4.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:377829470583:android:7d6442853a9ce1613d3172",
+        "android_client_info": {
+          "package_name": "com.hrumstik.flavorly"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDl3MvSQ1ckl6BdddvggovCJf7bOeZGca4"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

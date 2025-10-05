@@ -1,0 +1,33 @@
+# Cursor Rules for Expo React Native Project
+
+## Code Style
+
+- Use Prettier for formatting
+- Use ESLint for linting
+- Format on save is enabled
+- Use TypeScript strict mode
+- Use functional components with hooks
+- Use NativeWind for styling
+- Don't use comments
+
+## File Organization
+
+- Components in src/components/
+- Utils in src/utils/
+- Assets in src/assets/
+- App screens in src/app/
+
+## Import Order
+
+1. React imports
+2. Third-party libraries
+3. Local components
+4. Local utilities
+5. Types
+
+## Naming Conventions
+
+- Components: PascalCase
+- Files: camelCase for utilities, PascalCase for components
+- Variables: camelCase
+- Constants: UPPER_SNAKE_CASE
