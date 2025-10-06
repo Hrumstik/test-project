@@ -87,9 +87,7 @@ export const usePushNotifications = (shouldInitialize: boolean = true) => {
   const handleBackgroundNotifications = useCallback(() => {
     setBackgroundMessageHandler(
       messaging,
-      async (remoteMessage: FirebaseMessagingTypes.RemoteMessage) => {
-        // Background message received
-      }
+      async (remoteMessage: FirebaseMessagingTypes.RemoteMessage) => {}
     );
 
     onNotificationOpenedApp(

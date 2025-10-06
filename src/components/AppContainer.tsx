@@ -4,7 +4,7 @@ import { useAppState } from "../hooks/useAppState";
 import { usePermissionRequest } from "../hooks/usePermissionRequest";
 import { AppWebView } from "./AppWebView";
 import { NoInternetScreen } from "./NoInternetScreen";
-import { AppLoadingIndicator } from "./AppLoadingIndicator";
+import { AppLoadingScreen } from "./AppLoadingScreen";
 import { AppConfig, AppMode } from "../types/config";
 import { PermissionRequestScreen } from "./PermissionRequestScreen";
 
@@ -20,11 +20,7 @@ const LoadingState: React.FC<{
   error: string | null;
   isFirstLaunch: boolean;
 }> = ({ mode, url, isLoading, error, isFirstLaunch }) => {
-  return (
-    <View style={styles.loadingContainer}>
-      <AppLoadingIndicator size="large" />
-    </View>
-  );
+  return <AppLoadingScreen />;
 };
 
 const ErrorState: React.FC<{

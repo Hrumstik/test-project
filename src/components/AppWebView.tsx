@@ -4,248 +4,164 @@ import {
   StyleSheet,
   Text,
   Platform,
-  Linking,
   BackHandler,
+  Linking,
+  NativeSyntheticEvent,
+  Dimensions,
+  KeyboardAvoidingView,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { AppLoadingIndicator } from "./AppLoadingIndicator";
+import { WebView, WebViewMessageEvent } from "react-native-webview";
+
 import { Button } from "./Button";
-
-interface WebViewComponent {
-  reload: () => void;
-  goBack: () => void;
-  canGoBack: () => boolean;
-}
-
-let WebView: React.ComponentType<WebViewProps> | null = null;
-
-interface WebViewProps {
-  ref: React.RefObject<WebViewComponent | null>;
-  source: { uri: string };
-  style: object;
-  onLoadStart: () => void;
-  onLoadEnd: () => void;
-  onError: (syntheticEvent: { nativeEvent: { description: string } }) => void;
-  onHttpError: (syntheticEvent: {
-    nativeEvent: { statusCode: number };
-  }) => void;
-  onShouldStartLoadWithRequest: (request: { url: string }) => boolean;
-  startInLoadingState: boolean;
-  javaScriptEnabled: boolean;
-  domStorageEnabled: boolean;
-  allowsInlineMediaPlayback: boolean;
-  mediaPlaybackRequiresUserAction: boolean;
-  allowsBackForwardNavigationGestures: boolean;
-  mixedContentMode: string;
-  thirdPartyCookiesEnabled: boolean;
-  sharedCookiesEnabled: boolean;
-  userAgent: string;
-}
-
-if (Platform.OS === "ios" || Platform.OS === "android") {
-  try {
-    const { WebView: WebViewComponent } = require("react-native-webview");
-    WebView = WebViewComponent;
-  } catch (error) {
-    console.warn("WebView not available:", error);
-  }
-}
 
 interface AppWebViewProps {
   url: string;
   onError?: (error: string) => void;
   onRetry?: () => void;
+  darkSafeArea?: boolean;
+  onDeeplink?: (url: string) => void;
+  onFileUpload?: (file: any) => void;
 }
 
 export const AppWebView: React.FC<AppWebViewProps> = ({
   url,
   onError,
   onRetry,
+  darkSafeArea = false,
+  onDeeplink,
+  onFileUpload,
 }) => {
-  const [isLoading, setIsLoading] = useState(true);
   const [hasError, setHasError] = useState(false);
-  const [isInitialLoad, setIsInitialLoad] = useState(true);
-  const [canGoBack, setCanGoBack] = useState(false);
-  const [redirectCount, setRedirectCount] = useState(0);
   const [reloadKey, setReloadKey] = useState(0);
+  const [currentUrl, setCurrentUrl] = useState(url);
+  const webViewRef = useRef<WebView>(null);
 
-  const webViewRef = useRef<WebViewComponent>(null);
-  const redirectTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => {
+    const subscription = Dimensions.addEventListener(
+      "change",
+      ({ window }) => {}
+    );
+    return () => subscription?.remove();
+  }, []);
 
-  // Generate custom User-Agent that doesn't indicate WebView usage
-  const getCustomUserAgent = () => {
+  const getCustomUserAgent = (): string => {
     const platform = Platform.OS === "ios" ? "iPhone" : "Android";
-    const version = Platform.OS === "ios" ? "15.0" : "11.0";
-    const webkitVersion = "605.1.15";
+    const version = Platform.OS === "ios" ? "17.0" : "13.0";
     return `Mozilla/5.0 (${platform}; ${
       Platform.OS === "ios" ? "CPU iPhone OS" : "Linux; Android"
-    } ${version}) AppleWebKit/${webkitVersion} (KHTML, like Gecko) Version/15.0 Mobile/15E148 Safari/604.1`;
+    } ${version}) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile Safari/604.1`;
   };
 
-  // Handle back button press
   const handleBackPress = useCallback(() => {
-    if (
-      canGoBack &&
-      webViewRef.current &&
-      typeof webViewRef.current.goBack === "function"
-    ) {
+    const canGoBack = webViewRef.current && "goBack" in webViewRef.current;
+    if (canGoBack) {
       try {
-        webViewRef.current.goBack();
+        webViewRef.current?.goBack?.();
         return true;
       } catch {
         return false;
       }
     }
     return false;
-  }, [canGoBack]);
+  }, []);
 
-  // Setup back button handler
   useEffect(() => {
-    const backHandler = BackHandler.addEventListener(
+    const sub = BackHandler.addEventListener(
       "hardwareBackPress",
       handleBackPress
     );
-    return () => backHandler.remove();
+    return () => sub.remove();
   }, [handleBackPress]);
 
-  // Cleanup timeout on unmount
-  useEffect(() => {
-    return () => {
-      if (redirectTimeoutRef.current) {
-        clearTimeout(redirectTimeoutRef.current);
-      }
-    };
-  }, []);
-
-  if (!WebView) {
-    return (
-      <SafeAreaView style={styles.unsupportedContainer}>
-        <View style={styles.unsupportedContent}>
-          <Text style={styles.unsupportedTitle}>WebView not supported</Text>
-          <Text style={styles.unsupportedMessage}>
-            WebView is not supported on this platform. Open the link in browser:
-          </Text>
-          <Text style={styles.urlText}>{url}</Text>
-          <Button
-            title="Open in browser"
-            onPress={() => Linking.openURL(url)}
-            style={styles.browserButton}
-          />
-          {onRetry && (
-            <Button
-              title="Retry"
-              onPress={onRetry}
-              style={styles.retryButton}
-            />
-          )}
-        </View>
-      </SafeAreaView>
-    );
-  }
-
   const handleLoadStart = () => {
-    if (isInitialLoad) {
-      setIsLoading(true);
-      setRedirectCount(0);
-    } else {
-      setRedirectCount((prev) => prev + 1);
-    }
     setHasError(false);
-
-    if (redirectTimeoutRef.current) {
-      clearTimeout(redirectTimeoutRef.current);
-    }
-
-    redirectTimeoutRef.current = setTimeout(() => {
-      if (redirectCount > 10) {
-        // just continue silently
-      }
-    }, 5000);
   };
 
-  const handleLoadEnd = () => {
-    setIsLoading(false);
-    setIsInitialLoad(false);
+  const handleError = (event: NativeSyntheticEvent<any>) => {
+    const { description = "", domain = "", code = 0 } = event.nativeEvent;
+    const lower = description.toLowerCase();
+    console.log("handleError", { description, domain, code });
 
-    if (redirectTimeoutRef.current) {
-      clearTimeout(redirectTimeoutRef.current);
-      redirectTimeoutRef.current = null;
-    }
-
-    if (
-      webViewRef.current &&
-      typeof webViewRef.current.canGoBack === "function"
-    ) {
-      try {
-        const canNavigateBack = webViewRef.current.canGoBack();
-        setCanGoBack(canNavigateBack);
-      } catch {
-        setCanGoBack(false);
-      }
-    }
-  };
-
-  const handleError = (event: {
-    nativeEvent?: { description?: string };
-  }): void => {
-    const description = event.nativeEvent?.description?.toLowerCase() ?? "";
     const isRedirectError =
-      description.includes("redirect") ||
-      description.includes("слишком много переадресовок") ||
-      description.includes("too many redirects");
+      lower.includes("redirect") ||
+      code === -1007 ||
+      (domain === "NSURLErrorDomain" &&
+        (lower.includes("слишком много переадресовок") ||
+          lower.includes("too many redirects")));
 
     if (isRedirectError) {
+      console.log("🔄 Too many redirects — reloading:", currentUrl);
       setHasError(false);
-      setIsLoading(true);
+
       setReloadKey((k) => k + 1);
-    } else {
-      setHasError(true);
-      setIsLoading(false);
+      return;
     }
+
+    setHasError(true);
+
+    onError?.(description);
   };
 
-  const handleHttpError = (syntheticEvent: {
-    nativeEvent: { statusCode: number };
-  }) => {
-    const { nativeEvent } = syntheticEvent;
-
-    if (nativeEvent.statusCode >= 300 && nativeEvent.statusCode < 400) return;
-
-    setIsLoading(false);
+  const handleHttpError = (event: NativeSyntheticEvent<any>) => {
+    const statusCode = event.nativeEvent.statusCode;
+    if (statusCode >= 300 && statusCode < 400) return;
     setHasError(true);
-    onError?.(`HTTP Error: ${nativeEvent.statusCode}`);
+    onError?.(`HTTP Error: ${statusCode}`);
   };
 
   const handleRetry = () => {
     setHasError(false);
-    setIsLoading(true);
-    setIsInitialLoad(true);
-    setCanGoBack(false);
-    setRedirectCount(0);
 
-    if (redirectTimeoutRef.current) {
-      clearTimeout(redirectTimeoutRef.current);
-      redirectTimeoutRef.current = null;
-    }
-
-    if (webViewRef.current && typeof webViewRef.current.reload === "function") {
-      try {
-        webViewRef.current.reload();
-      } catch {
-        // ignore
-      }
-    }
+    setReloadKey((k) => k + 1);
     onRetry?.();
   };
 
-  const handleShouldStartLoadWithRequest = () => true;
+  const handleShouldStartLoadWithRequest = (request: { url: string }) => {
+    const { url: reqUrl } = request;
+    console.log("🌐 Navigating to:", reqUrl);
+    const isHttp = reqUrl.startsWith("http");
+    const isHttps = reqUrl.startsWith("https");
+
+    if (isHttp || isHttps) {
+      setCurrentUrl(reqUrl);
+      return true;
+    }
+
+    const isDeeplink = reqUrl.includes("://") && !reqUrl.startsWith("http");
+    if (isDeeplink) {
+      onDeeplink?.(reqUrl);
+      Linking.openURL(reqUrl).catch(() => {});
+      return false;
+    }
+
+    Linking.openURL(reqUrl).catch(() => {});
+    return false;
+  };
+
+  const handleMessage = (event: WebViewMessageEvent) => {
+    try {
+      const data = JSON.parse(event.nativeEvent.data);
+      if (data.type === "file_upload" && onFileUpload) {
+        onFileUpload(data.file);
+      }
+    } catch (error) {
+      console.log("WebView message parsing error:", error);
+    }
+  };
 
   if (hasError) {
     return (
-      <SafeAreaView style={styles.errorContainer}>
+      <SafeAreaView
+        style={[styles.safeArea, darkSafeArea && styles.darkSafeArea]}
+      >
         <View style={styles.errorContent}>
-          <Text style={styles.errorTitle}>Loading Error</Text>
-          <Text style={styles.errorMessage}>
+          <Text style={[styles.errorTitle, darkSafeArea && styles.textLight]}>
+            Loading Error
+          </Text>
+          <Text
+            style={[styles.errorMessage, darkSafeArea && styles.textLightDim]}
+          >
             Failed to load page. Check your internet connection.
           </Text>
           <Button
@@ -259,102 +175,102 @@ export const AppWebView: React.FC<AppWebViewProps> = ({
   }
 
   return (
-    <SafeAreaView style={styles.container}>
-      <WebView
-        key={reloadKey}
-        ref={webViewRef}
-        source={{ uri: url }}
-        style={styles.webview}
-        onLoadStart={handleLoadStart}
-        onLoadEnd={handleLoadEnd}
-        onError={handleError}
-        onHttpError={handleHttpError}
-        onShouldStartLoadWithRequest={handleShouldStartLoadWithRequest}
-        startInLoadingState={false}
-        javaScriptEnabled
-        domStorageEnabled
-        allowsInlineMediaPlayback
-        mediaPlaybackRequiresUserAction={false}
-        allowsBackForwardNavigationGestures
-        mixedContentMode="compatibility"
-        thirdPartyCookiesEnabled
-        sharedCookiesEnabled
-        userAgent={getCustomUserAgent()}
-      />
-      {isLoading && (
-        <View style={styles.loadingOverlay}>
-          <AppLoadingIndicator size="large" />
-        </View>
-      )}
+    <SafeAreaView
+      style={styles.safeArea}
+      edges={["top", "bottom", "left", "right"]}
+    >
+      <KeyboardAvoidingView
+        style={styles.keyboardAvoidingView}
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 20}
+      >
+        <WebView
+          key={reloadKey}
+          ref={webViewRef}
+          source={{ uri: currentUrl }}
+          onLoadStart={handleLoadStart}
+          onError={handleError}
+          onHttpError={handleHttpError}
+          onShouldStartLoadWithRequest={handleShouldStartLoadWithRequest}
+          onMessage={handleMessage}
+          startInLoadingState={false}
+          javaScriptEnabled
+          domStorageEnabled
+          allowsInlineMediaPlayback
+          mediaPlaybackRequiresUserAction={false}
+          allowsBackForwardNavigationGestures
+          mixedContentMode="compatibility"
+          thirdPartyCookiesEnabled
+          sharedCookiesEnabled
+          allowsFullscreenVideo
+          allowsProtectedMedia
+          allowsAirPlayForMediaPlayback
+          allowsPictureInPictureMediaPlayback
+          automaticallyAdjustContentInsets={false}
+          decelerationRate="normal"
+          directionalLockEnabled={false}
+          hideKeyboardAccessoryView={false}
+          keyboardDisplayRequiresUserAction={false}
+          limitsNavigationsToAppBoundDomains={false}
+          pullToRefreshEnabled
+          renderToHardwareTextureAndroid
+          scrollEnabled
+          showsHorizontalScrollIndicator={false}
+          showsVerticalScrollIndicator={false}
+          textZoom={100}
+          userAgent={getCustomUserAgent()}
+        />
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#ffffff" },
-  webview: { flex: 1, backgroundColor: "#ffffff" },
+  safeArea: {
+    flex: 1,
+    backgroundColor: "black",
+  },
+  darkSafeArea: {
+    backgroundColor: "black",
+  },
+  keyboardAvoidingView: {
+    flex: 1,
+  },
+  webview: {
+    flex: 1,
+    backgroundColor: "#ffffff",
+  },
   loadingOverlay: {
-    position: "absolute",
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
+    ...StyleSheet.absoluteFillObject,
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: "rgba(255, 255, 255, 0.95)",
+    backgroundColor: "rgba(255,255,255,0.95)",
     zIndex: 1000,
   },
-  errorContainer: {
+  darkLoadingOverlay: {
+    backgroundColor: "rgba(0,0,0,0.85)",
+  },
+  errorContent: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: "#ffffff",
     padding: 20,
   },
-  errorContent: { alignItems: "center", maxWidth: 300 },
   errorTitle: {
     fontSize: 18,
     fontWeight: "bold",
-    color: "#333333",
+    color: "#333",
     marginBottom: 10,
     textAlign: "center",
   },
   errorMessage: {
     fontSize: 14,
-    color: "#666666",
+    color: "#666",
     marginBottom: 20,
     textAlign: "center",
     lineHeight: 20,
   },
+  textLight: { color: "#fff" },
+  textLightDim: { color: "#aaa" },
   retryButton: { minWidth: 120 },
-  unsupportedContainer: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    backgroundColor: "#ffffff",
-    padding: 20,
-  },
-  unsupportedContent: { alignItems: "center", maxWidth: 350 },
-  unsupportedTitle: {
-    fontSize: 20,
-    fontWeight: "bold",
-    color: "#333333",
-    marginBottom: 15,
-    textAlign: "center",
-  },
-  unsupportedMessage: {
-    fontSize: 16,
-    color: "#666666",
-    marginBottom: 15,
-    textAlign: "center",
-    lineHeight: 22,
-  },
-  urlText: {
-    fontSize: 14,
-    color: "#007bff",
-    marginBottom: 20,
-    textAlign: "center",
-    fontFamily: Platform.OS === "ios" ? "Courier" : "monospace",
-  },
-  browserButton: { minWidth: 180, marginBottom: 10 },
 });

@@ -89,7 +89,6 @@ export class ConfigService {
 
       console.log("data", data);
 
-      // Если сервер вернул ошибку, переходим в APP режим
       if (!data.ok) {
         await this.saveConfigData({
           url: null,
@@ -101,7 +100,6 @@ export class ConfigService {
         return data;
       }
 
-      // Validate and fix URL if needed
       let validUrl = data.url;
       if (
         validUrl &&
@@ -111,7 +109,6 @@ export class ConfigService {
         validUrl = `https://${validUrl}`;
       }
 
-      // Проверяем что URL валидный
       if (validUrl && validUrl.length > 0) {
         await this.saveConfigData({
           url: validUrl,
@@ -134,7 +131,6 @@ export class ConfigService {
     } catch (error) {
       console.log("ConfigService requestConfig error:", error);
 
-      // При любой ошибке переходим в APP режим
       await this.saveConfigData({
         url: null,
         expires: null,
@@ -254,9 +250,7 @@ export class ConfigService {
           configRequestFailed: savedData.configRequestFailed || false,
         });
       }
-    } catch {
-      // Failed to set app mode
-    }
+    } catch {}
   }
 
   public async isFirstLaunch(): Promise<boolean> {
@@ -278,16 +272,12 @@ export class ConfigService {
           configRequestFailed: savedData.configRequestFailed || false,
         });
       }
-    } catch {
-      // Failed to mark first launch complete
-    }
+    } catch {}
   }
 
   public async updatePushToken(pushToken: string): Promise<void> {
     try {
       await this.requestConfig(pushToken);
-    } catch {
-      // Failed to update push token
-    }
+    } catch {}
   }
 }

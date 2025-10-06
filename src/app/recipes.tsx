@@ -1,6 +1,6 @@
 import { BottomNavigation } from "@/components/BottomNavigation";
 import { EmptyState } from "@/components/EmptyState";
-import { AppLoadingIndicator } from "@/components/AppLoadingIndicator";
+import { AppLoadingScreen } from "@/components/AppLoadingScreen";
 import { RecipeCard } from "@/components/RecipeCard";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useRecipes } from "@/hooks/useRecipes";
@@ -101,7 +101,7 @@ export default function RecipesScreen() {
       </View>
 
       {loading ? (
-        <AppLoadingIndicator text={i18n.t("loading_recipes")} />
+        <AppLoadingScreen />
       ) : error ? (
         <EmptyState
           icon="alert-circle"

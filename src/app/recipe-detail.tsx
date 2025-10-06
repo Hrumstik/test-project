@@ -1,4 +1,4 @@
-import { AppLoadingIndicator } from "@/components/AppLoadingIndicator";
+import { AppLoadingScreen } from "@/components/AppLoadingScreen";
 import { ImageWithFallback } from "@/components/ImageWithFallback";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useRecipes } from "@/hooks/useRecipes";
@@ -41,7 +41,7 @@ export default function RecipeDetailScreen() {
     return (
       <>
         <StatusBar style={isDark ? "light" : "dark"} />
-        <AppLoadingIndicator text={i18n.t("loading_recipe")} />
+        <AppLoadingScreen />
       </>
     );
   }
@@ -106,7 +106,6 @@ export default function RecipeDetailScreen() {
     <View style={{ flex: 1, backgroundColor: colors.background }}>
       <StatusBar style={isDark ? "light" : "dark"} />
 
-      {}
       <View
         style={{
           flexDirection: "row",
@@ -142,7 +141,6 @@ export default function RecipeDetailScreen() {
       </View>
 
       <ScrollView className="flex-1" showsVerticalScrollIndicator={false}>
-        {}
         <View className="relative">
           <ImageWithFallback
             uri={recipe.image}
@@ -177,7 +175,6 @@ export default function RecipeDetailScreen() {
           </View>
         </View>
 
-        {}
         <View
           style={{
             flexDirection: "row",
@@ -203,7 +200,6 @@ export default function RecipeDetailScreen() {
           </View>
         </View>
 
-        {}
         <View className="px-4 py-6">
           <Text
             style={{
@@ -241,7 +237,6 @@ export default function RecipeDetailScreen() {
           ))}
         </View>
 
-        {}
         <View
           className="px-4 py-6"
           style={{ borderTopWidth: 1, borderTopColor: colors.border }}

@@ -1,5 +1,5 @@
 import { BottomNavigation } from "@/components/BottomNavigation";
-import { AppLoadingIndicator } from "@/components/AppLoadingIndicator";
+import { AppLoadingScreen } from "@/components/AppLoadingScreen";
 import { RecipeCard } from "@/components/RecipeCard";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useRecipes } from "@/hooks/useRecipes";
@@ -79,7 +79,6 @@ export default function RandomScreen() {
     <View style={{ flex: 1, backgroundColor: colors.background }}>
       <StatusBar style={isDark ? "light" : "dark"} />
 
-      {}
       <View
         className="flex-row justify-between items-center px-4 py-2"
         style={{ backgroundColor: colors.background, paddingTop: 50 }}
@@ -119,16 +118,14 @@ export default function RandomScreen() {
         </Pressable>
       </View>
 
-      {}
       {loading ? (
-        <AppLoadingIndicator text={i18n.t("loading_recipe")} />
+        <AppLoadingScreen />
       ) : randomRecipe ? (
         <ScrollView
           className="flex-1 px-4"
           showsVerticalScrollIndicator={false}
           contentContainerStyle={{ paddingBottom: 100 }}
         >
-          {}
           <View className="mb-6">
             <View className="flex-row items-center justify-between mb-4">
               <Text
@@ -164,7 +161,6 @@ export default function RandomScreen() {
             />
           </View>
 
-          {}
           <View className="mb-6">
             <Text
               style={{
@@ -203,7 +199,6 @@ export default function RandomScreen() {
             </View>
           </View>
 
-          {}
           <View
             style={{
               backgroundColor: colors.surface,
