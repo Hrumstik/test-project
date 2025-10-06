@@ -4,14 +4,14 @@ PODS:
   - AppsFlyerFramework/Main (6.17.5)
   - boost (1.84.0)
   - DoubleConversion (1.1.6)
-  - EXApplication (7.0.7):
+  - EXApplication (6.1.5):
     - ExpoModulesCore
   - EXConstants (17.1.7):
     - ExpoModulesCore
   - EXJSONUtils (0.15.0)
   - EXManifests (0.16.6):
     - ExpoModulesCore
-  - EXNotifications (0.32.12):
+  - EXNotifications (0.31.4):
     - ExpoModulesCore
   - Expo (53.0.23):
     - DoubleConversion
@@ -2558,11 +2558,11 @@ SPEC CHECKSUMS:
   AppsFlyerFramework: da52a40c07c9f81a7829952e0fd854b6eacf5a7d
   boost: 7e761d76ca2ce687f7cc98e698152abd03a18f90
   DoubleConversion: cb417026b2400c8f53ae97020b2be961b59470cb
-  EXApplication: 296622817d459f46b6c5fe8691f4aac44d2b79e7
+  EXApplication: 1e06972201838375ca1ec1ba34d586a98a5dc718
   EXConstants: 98bcf0f22b820f9b28f9fee55ff2daededadd2f8
   EXJSONUtils: 1d3e4590438c3ee593684186007028a14b3686cd
   EXManifests: 691a779b04e4f2c96da46fb9bef4f86174fefcb5
-  EXNotifications: 7cff475adb5d7a255a9ea46bbd2589cb3b454506
+  EXNotifications: be5e949edf1d60b70e77178b81aa505298fadd07
   Expo: ffa073320103615dfec9957a071ba949671a7d5d
   expo-dev-client: 9b1e78baf0dd87b005f035d180bbb07c05917fad
   expo-dev-launcher: e240b09f9fef555916cc71feb30ef5cfaf23f257

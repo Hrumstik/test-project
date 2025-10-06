@@ -41,6 +41,7 @@ interface WebViewProps {
   sharedCookiesEnabled: boolean;
   userAgent: string;
 }
+
 if (Platform.OS === "ios" || Platform.OS === "android") {
   try {
     const { WebView: WebViewComponent } = require("react-native-webview");
@@ -66,6 +67,8 @@ export const AppWebView: React.FC<AppWebViewProps> = ({
   const [isInitialLoad, setIsInitialLoad] = useState(true);
   const [canGoBack, setCanGoBack] = useState(false);
   const [redirectCount, setRedirectCount] = useState(0);
+  const [reloadKey, setReloadKey] = useState(0);
+
   const webViewRef = useRef<WebViewComponent>(null);
   const redirectTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -74,8 +77,9 @@ export const AppWebView: React.FC<AppWebViewProps> = ({
     const platform = Platform.OS === "ios" ? "iPhone" : "Android";
     const version = Platform.OS === "ios" ? "15.0" : "11.0";
     const webkitVersion = "605.1.15";
-
-    return `Mozilla/5.0 (${platform}; ${Platform.OS === "ios" ? "CPU iPhone OS" : "Linux; Android"} ${version}) AppleWebKit/${webkitVersion} (KHTML, like Gecko) Version/15.0 Mobile/15E148 Safari/604.1`;
+    return `Mozilla/5.0 (${platform}; ${
+      Platform.OS === "ios" ? "CPU iPhone OS" : "Linux; Android"
+    } ${version}) AppleWebKit/${webkitVersion} (KHTML, like Gecko) Version/15.0 Mobile/15E148 Safari/604.1`;
   };
 
   // Handle back button press
@@ -87,13 +91,12 @@ export const AppWebView: React.FC<AppWebViewProps> = ({
     ) {
       try {
         webViewRef.current.goBack();
-        return true; // Prevent default back behavior
+        return true;
       } catch {
-        console.log("🔄 AppWebView: goBack not available");
-        return false; // Allow default back behavior
+        return false;
       }
     }
-    return false; // Allow default back behavior (close WebView)
+    return false;
   }, [canGoBack]);
 
   // Setup back button handler
@@ -116,10 +119,7 @@ export const AppWebView: React.FC<AppWebViewProps> = ({
 
   if (!WebView) {
     return (
-      <SafeAreaView
-        style={styles.unsupportedContainer}
-        edges={["top", "bottom", "left", "right"]}
-      >
+      <SafeAreaView style={styles.unsupportedContainer}>
         <View style={styles.unsupportedContent}>
           <Text style={styles.unsupportedTitle}>WebView not supported</Text>
           <Text style={styles.unsupportedMessage}>
@@ -128,17 +128,13 @@ export const AppWebView: React.FC<AppWebViewProps> = ({
           <Text style={styles.urlText}>{url}</Text>
           <Button
             title="Open in browser"
-            onPress={() => {
-              Linking.openURL(url);
-            }}
+            onPress={() => Linking.openURL(url)}
             style={styles.browserButton}
           />
           {onRetry && (
             <Button
               title="Retry"
-              onPress={() => {
-                onRetry();
-              }}
+              onPress={onRetry}
               style={styles.retryButton}
             />
           )}
@@ -152,22 +148,17 @@ export const AppWebView: React.FC<AppWebViewProps> = ({
       setIsLoading(true);
       setRedirectCount(0);
     } else {
-      // Increment redirect count for non-initial loads
       setRedirectCount((prev) => prev + 1);
     }
     setHasError(false);
 
-    // Clear any existing timeout
     if (redirectTimeoutRef.current) {
       clearTimeout(redirectTimeoutRef.current);
     }
 
-    // Set a timeout to handle potential redirect loops
     redirectTimeoutRef.current = setTimeout(() => {
       if (redirectCount > 10) {
-        console.log(
-          "🔄 AppWebView: Too many redirects detected, but continuing..."
-        );
+        // just continue silently
       }
     }, 5000);
   };
@@ -189,36 +180,28 @@ export const AppWebView: React.FC<AppWebViewProps> = ({
         const canNavigateBack = webViewRef.current.canGoBack();
         setCanGoBack(canNavigateBack);
       } catch {
-        console.log("🔄 AppWebView: canGoBack not available, setting to false");
         setCanGoBack(false);
       }
     }
   };
 
-  const handleError = (syntheticEvent: {
-    nativeEvent: { description: string };
-  }) => {
-    const { nativeEvent } = syntheticEvent;
-    console.error("🚨 AppWebView: WebView error occurred:", nativeEvent);
-    console.error("🚨 AppWebView: Error description:", nativeEvent.description);
-
-    // Check if it's a redirect error
+  const handleError = (event: {
+    nativeEvent?: { description?: string };
+  }): void => {
+    const description = event.nativeEvent?.description?.toLowerCase() ?? "";
     const isRedirectError =
-      nativeEvent.description?.includes("ERR_TOO_MANY_REDIRECTS") ||
-      nativeEvent.description?.includes("too many redirects") ||
-      nativeEvent.description?.includes("redirect");
+      description.includes("redirect") ||
+      description.includes("слишком много переадресовок") ||
+      description.includes("too many redirects");
 
     if (isRedirectError) {
-      console.log(
-        "🔄 AppWebView: Redirect error detected, attempting to continue loading..."
-      );
-      // Don't set error state for redirect issues, let it continue loading
-      return;
+      setHasError(false);
+      setIsLoading(true);
+      setReloadKey((k) => k + 1);
+    } else {
+      setHasError(true);
+      setIsLoading(false);
     }
-
-    setIsLoading(false);
-    setHasError(true);
-    onError?.(nativeEvent.description || "Failed to load page");
   };
 
   const handleHttpError = (syntheticEvent: {
@@ -226,12 +209,7 @@ export const AppWebView: React.FC<AppWebViewProps> = ({
   }) => {
     const { nativeEvent } = syntheticEvent;
 
-    if (nativeEvent.statusCode >= 300 && nativeEvent.statusCode < 400) {
-      console.log(
-        `🔄 AppWebView: Redirect status code ${nativeEvent.statusCode}, continuing...`
-      );
-      return;
-    }
+    if (nativeEvent.statusCode >= 300 && nativeEvent.statusCode < 400) return;
 
     setIsLoading(false);
     setHasError(true);
@@ -245,7 +223,6 @@ export const AppWebView: React.FC<AppWebViewProps> = ({
     setCanGoBack(false);
     setRedirectCount(0);
 
-    // Clear any existing timeout
     if (redirectTimeoutRef.current) {
       clearTimeout(redirectTimeoutRef.current);
       redirectTimeoutRef.current = null;
@@ -255,21 +232,17 @@ export const AppWebView: React.FC<AppWebViewProps> = ({
       try {
         webViewRef.current.reload();
       } catch {
-        console.log("🔄 AppWebView: reload not available");
+        // ignore
       }
     }
     onRetry?.();
   };
 
-  const handleShouldStartLoadWithRequest = () => {
-    return true;
-  };
+  const handleShouldStartLoadWithRequest = () => true;
+
   if (hasError) {
     return (
-      <SafeAreaView
-        style={styles.errorContainer}
-        edges={["top", "bottom", "left", "right"]}
-      >
+      <SafeAreaView style={styles.errorContainer}>
         <View style={styles.errorContent}>
           <Text style={styles.errorTitle}>Loading Error</Text>
           <Text style={styles.errorMessage}>
@@ -286,11 +259,9 @@ export const AppWebView: React.FC<AppWebViewProps> = ({
   }
 
   return (
-    <SafeAreaView
-      style={styles.container}
-      edges={["top", "bottom", "left", "right"]}
-    >
+    <SafeAreaView style={styles.container}>
       <WebView
+        key={reloadKey}
         ref={webViewRef}
         source={{ uri: url }}
         style={styles.webview}
@@ -300,14 +271,14 @@ export const AppWebView: React.FC<AppWebViewProps> = ({
         onHttpError={handleHttpError}
         onShouldStartLoadWithRequest={handleShouldStartLoadWithRequest}
         startInLoadingState={false}
-        javaScriptEnabled={true}
-        domStorageEnabled={true}
-        allowsInlineMediaPlayback={true}
+        javaScriptEnabled
+        domStorageEnabled
+        allowsInlineMediaPlayback
         mediaPlaybackRequiresUserAction={false}
-        allowsBackForwardNavigationGestures={true}
+        allowsBackForwardNavigationGestures
         mixedContentMode="compatibility"
-        thirdPartyCookiesEnabled={true}
-        sharedCookiesEnabled={true}
+        thirdPartyCookiesEnabled
+        sharedCookiesEnabled
         userAgent={getCustomUserAgent()}
       />
       {isLoading && (
@@ -320,14 +291,8 @@ export const AppWebView: React.FC<AppWebViewProps> = ({
 };
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#ffffff",
-  },
-  webview: {
-    flex: 1,
-    backgroundColor: "#ffffff",
-  },
+  container: { flex: 1, backgroundColor: "#ffffff" },
+  webview: { flex: 1, backgroundColor: "#ffffff" },
   loadingOverlay: {
     position: "absolute",
     top: 0,
@@ -346,10 +311,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#ffffff",
     padding: 20,
   },
-  errorContent: {
-    alignItems: "center",
-    maxWidth: 300,
-  },
+  errorContent: { alignItems: "center", maxWidth: 300 },
   errorTitle: {
     fontSize: 18,
     fontWeight: "bold",
@@ -364,9 +326,7 @@ const styles = StyleSheet.create({
     textAlign: "center",
     lineHeight: 20,
   },
-  retryButton: {
-    minWidth: 120,
-  },
+  retryButton: { minWidth: 120 },
   unsupportedContainer: {
     flex: 1,
     justifyContent: "center",
@@ -374,10 +334,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#ffffff",
     padding: 20,
   },
-  unsupportedContent: {
-    alignItems: "center",
-    maxWidth: 350,
-  },
+  unsupportedContent: { alignItems: "center", maxWidth: 350 },
   unsupportedTitle: {
     fontSize: 20,
     fontWeight: "bold",
@@ -399,8 +356,5 @@ const styles = StyleSheet.create({
     textAlign: "center",
     fontFamily: Platform.OS === "ios" ? "Courier" : "monospace",
   },
-  browserButton: {
-    minWidth: 180,
-    marginBottom: 10,
-  },
+  browserButton: { minWidth: 180, marginBottom: 10 },
 });
